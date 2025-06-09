@@ -7,9 +7,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-serif' })
 
 export const metadata: Metadata = {
-  title: 'WeddingShare - Share Your Wedding Memories',
-  description: 'A beautiful way for wedding guests to share photos, videos, and messages',
-}
+  title: "Celebrate Your Memories With Us - The Wedding of Roberta and Michael",
+  description: "Celebrate Your Memories With Us - The Wedding of Roberta and Michael",
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
 
 export default function RootLayout({
   children,
