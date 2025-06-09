@@ -83,10 +83,32 @@ export default function AdminDashboard() {
       
       for (const item of media) {
         try {
-          const response = await fetch(item.file_path)
-          if (response.ok) {
-            const blob = await response.blob()
-            zip.file(item.file_name, blob)
+          // Handle message-only entries
+          if (item.file_name === 'Message Only') {
+            // Create text content from message and guest info
+            let textContent = ''
+            if (item.uploaded_by) {
+              textContent += `From: ${item.uploaded_by}\n`
+            }
+            if (item.message) {
+              textContent += `Message: ${item.message}\n`
+            }
+            textContent += `Date: ${new Date(item.created_at).toLocaleString()}\n`
+            
+            // Create a meaningful filename with timestamp
+            const timestamp = new Date(item.created_at).toISOString().split('T')[0]
+            const guestName = item.uploaded_by ? item.uploaded_by.replace(/[^a-zA-Z0-9]/g, '_') : 'Guest'
+            const fileName = `Message_${guestName}_${timestamp}.txt`
+            
+            // Add text file to ZIP
+            zip.file(fileName, textContent)
+          } else {
+            // Handle regular files
+            const response = await fetch(item.file_path)
+            if (response.ok) {
+              const blob = await response.blob()
+              zip.file(item.file_name, blob)
+            }
           }
         } catch (error) {
           console.error(`Failed to download ${item.file_name}:`, error)
@@ -104,6 +126,7 @@ export default function AdminDashboard() {
   }
 
   const getFileIcon = (item: Media) => {
+    if (item.file_name === 'Message Only') return <Heart className="w-5 h-5 text-rose-500" />
     if (isImageFile(item.file_name)) return <Image className="w-5 h-5 text-blue-500" />
     if (isVideoFile(item.file_name)) return <Video className="w-5 h-5 text-purple-500" />
     if (isAudioFile(item.file_name)) return <Music className="w-5 h-5 text-green-500" />
@@ -111,6 +134,7 @@ export default function AdminDashboard() {
   }
 
   const getFileTypeLabel = (item: Media) => {
+    if (item.file_name === 'Message Only') return 'Message'
     if (isImageFile(item.file_name)) return 'Photo'
     if (isVideoFile(item.file_name)) return 'Video'
     if (isAudioFile(item.file_name)) return 'Audio'

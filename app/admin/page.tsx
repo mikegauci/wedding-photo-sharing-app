@@ -112,10 +112,32 @@ export default function AdminPage() {
       
       for (const item of media) {
         try {
-          const response = await fetch(item.file_path)
-          if (response.ok) {
-            const blob = await response.blob()
-            zip.file(item.file_name, blob)
+          // Handle message-only entries
+          if (item.file_name === 'Message Only') {
+            // Create text content from message and guest info
+            let textContent = ''
+            if (item.uploaded_by) {
+              textContent += `From: ${item.uploaded_by}\n`
+            }
+            if (item.message) {
+              textContent += `Message: ${item.message}\n`
+            }
+            textContent += `Date: ${new Date(item.created_at).toLocaleString()}\n`
+            
+            // Create a meaningful filename with timestamp
+            const timestamp = new Date(item.created_at).toISOString().split('T')[0]
+            const guestName = item.uploaded_by ? item.uploaded_by.replace(/[^a-zA-Z0-9]/g, '_') : 'Guest'
+            const fileName = `Message_${guestName}_${timestamp}.txt`
+            
+            // Add text file to ZIP
+            zip.file(fileName, textContent)
+          } else {
+            // Handle regular files
+            const response = await fetch(item.file_path)
+            if (response.ok) {
+              const blob = await response.blob()
+              zip.file(item.file_name, blob)
+            }
           }
         } catch (error) {
           console.error(`Failed to download ${item.file_name}:`, error)
