@@ -2,9 +2,10 @@
 
 import React, { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, X, FileText, Image, Video, Music } from 'lucide-react'
+import { Upload, X, FileText, Image, Video, Music, Mic } from 'lucide-react'
 import { Button } from './ui/Button'
-import { formatFileSize, isImageFile, isVideoFile, isAudioFile } from '@/lib/utils'
+import { formatFileSize, isImageFile, isVideoFile, isAudioFile, isVoiceMessage } from '@/lib/utils'
+import { VoiceRecorder } from './VoiceRecorder'
 
 interface FileUploadProps {
   eventId?: string
@@ -35,12 +36,28 @@ export function FileUpload({ eventId, onUploadComplete }: FileUploadProps) {
     setFiles(prev => [...prev, ...newFiles])
   }, [])
 
+  const handleVoiceRecording = useCallback((audioBlob: Blob, duration: number) => {
+    // Create a File object from the audio blob
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const fileName = `voice-message-${timestamp}.webm`
+    const voiceFile = new File([audioBlob], fileName, { type: 'audio/webm' })
+    
+    const newFile: UploadFile = {
+      file: voiceFile,
+      id: Math.random().toString(36).substring(2, 15),
+      progress: 0,
+      uploaded: false
+    }
+    
+    setFiles(prev => [...prev, newFile])
+  }, [])
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
       'video/*': ['.mp4', '.mov', '.avi', '.mkv', '.webm'],
-      'audio/*': ['.mp3', '.wav', '.m4a', '.ogg']
+      'audio/*': ['.mp3', '.wav', '.m4a', '.ogg', '.webm']
     },
     maxSize: 50 * 1024 * 1024 // 50MB
   })
@@ -130,8 +147,18 @@ export function FileUpload({ eventId, onUploadComplete }: FileUploadProps) {
   const getFileIcon = (uploadFile: UploadFile) => {
     if (isImageFile(uploadFile.file.name)) return <Image className="w-5 h-5 text-blue-500" />
     if (isVideoFile(uploadFile.file.name)) return <Video className="w-5 h-5 text-purple-500" />
+    if (isVoiceMessage(uploadFile.file.name, uploadFile.file.type)) {
+      return <Mic className="w-5 h-5 text-red-500" />
+    }
     if (isAudioFile(uploadFile.file.name)) return <Music className="w-5 h-5 text-green-500" />
     return <FileText className="w-5 h-5 text-gray-500" />
+  }
+
+  const getDisplayName = (uploadFile: UploadFile) => {
+    if (isVoiceMessage(uploadFile.file.name, uploadFile.file.type)) {
+      return 'Voice Message'
+    }
+    return uploadFile.file.name
   }
 
   return (
@@ -162,6 +189,11 @@ export function FileUpload({ eventId, onUploadComplete }: FileUploadProps) {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wedding-500 focus:border-transparent"
           />
         </div>
+      </div>
+
+      {/* Voice Recorder */}
+      <div>
+        <VoiceRecorder onRecordingComplete={handleVoiceRecording} />
       </div>
 
       {/* File Drop Zone */}
@@ -195,7 +227,7 @@ export function FileUpload({ eventId, onUploadComplete }: FileUploadProps) {
               <div className="flex items-center space-x-3">
                 {getFileIcon(file)}
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{file.file.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{getDisplayName(file)}</p>
                   <p className="text-xs text-gray-500">{formatFileSize(file.file.size)}</p>
                 </div>
               </div>

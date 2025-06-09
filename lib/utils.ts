@@ -30,6 +30,11 @@ export function isVideoFile(filename: string): boolean {
 
 export function isAudioFile(filename: string): boolean {
   if (!filename || typeof filename !== 'string') return false
-  const audioExtensions = ['.mp3', '.wav', '.m4a', '.ogg']
+  const audioExtensions = ['.mp3', '.wav', '.m4a', '.ogg', '.webm']
   return audioExtensions.some(ext => filename.toLowerCase().endsWith(ext))
+}
+
+export function isVoiceMessage(filename: string, fileType?: string): boolean {
+  if (!filename || typeof filename !== 'string') return false
+  return filename.includes('voice-message-') || fileType === 'audio/webm'
 }
