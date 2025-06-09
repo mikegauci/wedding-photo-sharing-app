@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 // Fixed wedding details - no events table needed
 const WEDDING_DETAILS = {
@@ -10,6 +10,19 @@ const WEDDING_DETAILS = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Create Supabase client at runtime
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase environment variables not configured')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
     const formData = await request.formData()
     const file = formData.get('file') as File
     const guestName = formData.get('guestName') as string
