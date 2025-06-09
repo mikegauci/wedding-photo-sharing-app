@@ -7,6 +7,7 @@ import { Button } from './ui/Button'
 import { formatFileSize, isImageFile, isVideoFile, isAudioFile } from '@/lib/utils'
 
 interface FileUploadProps {
+  eventId: string
   onUploadComplete?: () => void
 }
 
