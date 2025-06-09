@@ -7,7 +7,7 @@ import { Button } from './ui/Button'
 import { formatFileSize, isImageFile, isVideoFile, isAudioFile } from '@/lib/utils'
 
 interface FileUploadProps {
-  eventId: string
+  eventId?: string
   onUploadComplete?: () => void
 }
 
@@ -19,7 +19,7 @@ interface UploadFile {
   error?: string
 }
 
-export function FileUpload({ onUploadComplete }: FileUploadProps) {
+export function FileUpload({ eventId, onUploadComplete }: FileUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [uploading, setUploading] = useState(false)
   const [guestName, setGuestName] = useState('')
@@ -56,6 +56,9 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
     if (files.length === 0) {
       try {
         const formData = new FormData()
+        if (eventId) {
+          formData.append('eventId', eventId)
+        }
         formData.append('guestName', guestName)
         formData.append('message', message)
         formData.append('messageOnly', 'true')
@@ -89,6 +92,9 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
 
       try {
         const formData = new FormData()
+        if (eventId) {
+          formData.append('eventId', eventId)
+        }
         formData.append('file', file.file)
         formData.append('guestName', guestName)
         formData.append('message', message)
