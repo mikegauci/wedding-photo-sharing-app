@@ -24,7 +24,7 @@ export function isImageFile(filename: string): boolean {
 
 export function isVideoFile(filename: string): boolean {
   if (!filename || typeof filename !== 'string') return false
-  const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
+  const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv']
   return videoExtensions.some(ext => filename.toLowerCase().endsWith(ext))
 }
 

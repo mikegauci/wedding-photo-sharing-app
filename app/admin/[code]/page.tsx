@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Download, Image, Video, Music, FileText, Calendar, Users, Heart } from 'lucide-react'
+import { Download, Image, Video, Music, FileText, Calendar, Users, Heart, Mic, X, Play, Pause } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { formatFileSize, isImageFile, isVideoFile, isAudioFile } from '@/lib/utils'
+import { formatFileSize, isImageFile, isVideoFile, isAudioFile, isVoiceMessage } from '@/lib/utils'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 
@@ -35,6 +35,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [downloadLoading, setDownloadLoading] = useState(false)
   const [error, setError] = useState('')
+  const [previewItem, setPreviewItem] = useState<Media | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
     const fetchEventAndMedia = async () => {
@@ -126,19 +128,141 @@ export default function AdminDashboard() {
   }
 
   const getFileIcon = (item: Media) => {
-    if (item.file_name === 'Message Only') return <Heart className="w-5 h-5 text-rose-500" />
-    if (isImageFile(item.file_name)) return <Image className="w-5 h-5 text-blue-500" />
-    if (isVideoFile(item.file_name)) return <Video className="w-5 h-5 text-purple-500" />
-    if (isAudioFile(item.file_name)) return <Music className="w-5 h-5 text-green-500" />
-    return <FileText className="w-5 h-5 text-gray-500" />
+    if (item.file_name === 'Message Only') return <Heart className="w-12 h-12 text-rose-400" />
+    if (isVoiceMessage(item.file_name, item.file_type)) return <Mic className="w-12 h-12 text-green-400" />
+    if (isImageFile(item.file_name)) return <Image className="w-12 h-12 text-blue-400" />
+    if (isVideoFile(item.file_name)) return <Video className="w-12 h-12 text-purple-400" />
+    if (isAudioFile(item.file_name)) return <Music className="w-12 h-12 text-green-400" />
+    return <FileText className="w-12 h-12 text-gray-400" />
   }
 
   const getFileTypeLabel = (item: Media) => {
     if (item.file_name === 'Message Only') return 'Message'
+    if (isVoiceMessage(item.file_name, item.file_type)) return 'Voice Message'
     if (isImageFile(item.file_name)) return 'Photo'
     if (isVideoFile(item.file_name)) return 'Video'
     if (isAudioFile(item.file_name)) return 'Audio'
     return 'File'
+  }
+
+  const getFileBackground = (item: Media) => {
+    if (item.file_name === 'Message Only') return 'border-l-4 border-rose-400 bg-rose-50'
+    if (isVoiceMessage(item.file_name, item.file_type)) return 'border-l-4 border-green-400 bg-green-50'
+    if (isImageFile(item.file_name)) return 'border-l-4 border-blue-400 bg-blue-50'
+    if (isVideoFile(item.file_name)) return 'border-l-4 border-purple-400 bg-purple-50'
+    if (isAudioFile(item.file_name)) return 'border-l-4 border-green-400 bg-green-50'
+    return 'border-l-4 border-gray-400 bg-gray-50'
+  }
+
+  const openPreview = (item: Media) => {
+    setPreviewItem(item)
+    setIsPlaying(false)
+  }
+
+  const closePreview = () => {
+    setPreviewItem(null)
+    setIsPlaying(false)
+  }
+
+  const PreviewModal = () => {
+    if (!previewItem) return null
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto relative">
+          <button
+            onClick={closePreview}
+            className="absolute top-4 right-4 z-10 bg-gray-800 text-white rounded-full p-2 hover:bg-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="p-6">
+            <div className="flex items-center mb-4">
+              {getFileIcon(previewItem)}
+              <div className="ml-3">
+                <h3 className="text-lg font-semibold">{getFileTypeLabel(previewItem)}</h3>
+                <p className="text-sm text-gray-600">{previewItem.file_name}</p>
+              </div>
+            </div>
+
+            {/* Preview Content */}
+            <div className="mb-4">
+              {previewItem.file_name === 'Message Only' ? (
+                <div className="bg-rose-50 p-6 rounded-lg text-center">
+                  <Heart className="w-16 h-16 text-rose-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-rose-600 mb-2">Message</h4>
+                  {previewItem.message && (
+                    <p className="text-gray-700 text-lg">"{previewItem.message}"</p>
+                  )}
+                </div>
+              ) : isImageFile(previewItem.file_name) ? (
+                <img
+                  src={previewItem.file_path}
+                  alt={previewItem.file_name}
+                  className="max-w-full max-h-96 mx-auto rounded-lg"
+                />
+              ) : isVideoFile(previewItem.file_name) ? (
+                <video
+                  src={previewItem.file_path}
+                  controls
+                  className="max-w-full max-h-96 mx-auto rounded-lg"
+                />
+              ) : (isVoiceMessage(previewItem.file_name, previewItem.file_type) || isAudioFile(previewItem.file_name)) ? (
+                <div className="bg-green-50 p-6 rounded-lg text-center">
+                  <Mic className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-green-600 mb-4">
+                    {isVoiceMessage(previewItem.file_name, previewItem.file_type) ? 'Voice Message' : 'Audio File'}
+                  </h4>
+                  <audio
+                    src={previewItem.file_path}
+                    controls
+                    className="mx-auto"
+                  />
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-6 rounded-lg text-center">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">File preview not available</p>
+                  <a
+                    href={previewItem.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Download to view
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* File Details */}
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">File Size:</span>
+                <span className="text-sm text-gray-600">{formatFileSize(previewItem.file_size)}</span>
+              </div>
+              {previewItem.uploaded_by && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Uploaded by:</span>
+                  <span className="text-sm text-gray-600">{previewItem.uploaded_by}</span>
+                </div>
+              )}
+              {previewItem.message && previewItem.file_name !== 'Message Only' && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Message:</span>
+                  <span className="text-sm text-gray-600 italic">"{previewItem.message}"</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Date:</span>
+                <span className="text-sm text-gray-600">{new Date(previewItem.created_at).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -171,8 +295,13 @@ export default function AdminDashboard() {
   if (!event) return null
 
   const photoCount = media.filter(item => isImageFile(item.file_name)).length
-  const videoCount = media.filter(item => isVideoFile(item.file_name)).length
-  const audioCount = media.filter(item => isAudioFile(item.file_name)).length
+  const videoCount = media.filter(item => 
+    !isVoiceMessage(item.file_name, item.file_type) && isVideoFile(item.file_name)
+  ).length
+  const audioCount = media.filter(item => 
+    isVoiceMessage(item.file_name, item.file_type) || 
+    (!isVideoFile(item.file_name) && isAudioFile(item.file_name))
+  ).length
   const messageCount = media.filter(item => item.message).length
 
   return (
@@ -205,7 +334,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-gray-600">Videos</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
-              <Music className="w-6 h-6 text-green-500 mx-auto mb-2" />
+              <Mic className="w-6 h-6 text-green-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-green-600">{audioCount}</p>
               <p className="text-sm text-gray-600">Audio</p>
             </div>
@@ -245,7 +374,11 @@ export default function AdminDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {media.map((item) => (
-              <Card key={item.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={item.id} 
+                className={`${getFileBackground(item)} hover:shadow-lg transition-shadow cursor-pointer`}
+                onClick={() => openPreview(item)}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-2">
@@ -295,6 +428,7 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+      {previewItem && <PreviewModal />}
     </div>
   )
 }
