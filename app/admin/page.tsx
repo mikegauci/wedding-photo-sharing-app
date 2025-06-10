@@ -350,7 +350,7 @@ export default function AdminPage() {
     isVoiceMessage(item.file_name, item.file_type) || 
     (!isVideoFile(item.file_name) && isAudioFile(item.file_name))
   ).length
-  const messageCount = media.filter(item => item.message).length
+  const messageCount = media.filter(item => item.file_name === 'Message Only').length
 
   return (
     <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-wedding-50 to-rose-50">
